@@ -10,7 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/rabbitmq/amqp091-go"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/rabbitmq"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
 
 type config struct {
@@ -42,16 +43,14 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	conn, err := amqp091.Dial(cfg.addr)
+	c, err := rabbitmq.NewClient(cfg.addr)
 	if err != nil {
 		return fmt.Errorf("dialing rabbitmq: %w", err)
 	}
-	defer func() {
-		log.Println("closing rabbitmq connection...")
-		conn.Close()
-	}()
 
-	log.Println("RabbitMQ connnect successfully")
+	c.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
+
+	defer c.Close()
 
 	<-ctx.Done()
 

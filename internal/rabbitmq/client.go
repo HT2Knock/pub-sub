@@ -51,7 +51,7 @@ func (c *Client) init(conn *amqp091.Connection) error {
 }
 
 func (c *Client) Publish(exchange, key string, val any) error {
-	byte, err := json.Marshal(val)
+	data, err := json.Marshal(val)
 	if err != nil {
 		return fmt.Errorf("failed to marshal json: %w", err)
 	}
@@ -62,7 +62,7 @@ func (c *Client) Publish(exchange, key string, val any) error {
 	msg := amqp091.Publishing{
 		Timestamp:   time.Now(),
 		ContentType: "application/json",
-		Body:        byte,
+		Body:        data,
 	}
 
 	if err := c.channel.PublishWithContext(ctx, exchange, key, false, false, msg); err != nil {

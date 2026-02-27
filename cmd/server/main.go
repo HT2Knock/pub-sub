@@ -43,14 +43,15 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	c, err := rabbitmq.NewClient(cfg.addr)
+	client, err := rabbitmq.NewClient(cfg.addr)
 	if err != nil {
-		return fmt.Errorf("dialing rabbitmq: %w", err)
+		return err
 	}
+	defer client.Close()
 
-	c.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
-
-	defer c.Close()
+	if err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true}); err != nil {
+		return err
+	}
 
 	<-ctx.Done()
 

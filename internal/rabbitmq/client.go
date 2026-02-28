@@ -7,16 +7,23 @@ import (
 	"log"
 	"time"
 
-	"github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+type SimpleQueueType int
+
+const (
+	Transient = iota
+	Durable
 )
 
 type Client struct {
-	conn    *amqp091.Connection
-	channel *amqp091.Channel
+	conn    *amqp.Connection
+	channel *amqp.Channel
 }
 
 func NewClient(addr string) (*Client, error) {
-	conn, err := amqp091.Dial(addr)
+	conn, err := amqp.Dial(addr)
 	if err != nil {
 		return nil, fmt.Errorf("dialing rabbitmq: %w", err)
 	}
@@ -40,7 +47,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) init(conn *amqp091.Connection) error {
+func (c *Client) init(conn *amqp.Connection) error {
 	ch, err := conn.Channel()
 	if err != nil {
 		return err
@@ -59,7 +66,7 @@ func (c *Client) Publish(exchange, key string, val any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	msg := amqp091.Publishing{
+	msg := amqp.Publishing{
 		Timestamp:   time.Now(),
 		ContentType: "application/json",
 		Body:        data,
@@ -70,4 +77,17 @@ func (c *Client) Publish(exchange, key string, val any) error {
 	}
 
 	return nil
+}
+
+func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType SimpleQueueType) (amqp.Queue, error) {
+	q, err := c.channel.QueueDeclare(queueName, queueType == Durable, queueType == Transient, queueType == Transient, false, nil)
+	if err != nil {
+		return amqp.Queue{}, fmt.Errorf("failed to declare queue: %w", err)
+	}
+
+	if err := c.channel.QueueBind(queueName, key, exchange, false, nil); err != nil {
+		return amqp.Queue{}, fmt.Errorf("failed to bind queue to exchange: %w", err)
+	}
+
+	return q, nil
 }

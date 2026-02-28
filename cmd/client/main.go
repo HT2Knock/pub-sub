@@ -12,6 +12,7 @@ import (
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/rabbitmq"
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
 
 type config struct {
@@ -49,9 +50,16 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	defer client.Close()
 
-	gamelogic.ClientWelcome()
+	username, err := gamelogic.ClientWelcome()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.DeclareAndBind(routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, rabbitmq.Transient)
+	if err != nil {
+		return err
+	}
 
 	<-ctx.Done()
-
 	return nil
 }

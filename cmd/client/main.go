@@ -62,6 +62,12 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 
 	gs := gamelogic.NewGameState(username)
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		inputs := gamelogic.GetInput()
 		if len(inputs) < 1 {
 			continue

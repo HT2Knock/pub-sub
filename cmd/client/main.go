@@ -60,6 +60,25 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	<-ctx.Done()
-	return nil
+	gs := gamelogic.NewGameState(username)
+	for {
+		inputs := gamelogic.GetInput()
+		if len(inputs) < 1 {
+			continue
+		}
+
+		switch inputs[0] {
+		case "spawn":
+			if err := gs.CommandSpawn(inputs[1:]); err != nil {
+				log.Printf("Spawn failed: %v\n", err)
+			}
+
+		case "quit":
+			log.Println("quitting good bye...")
+			return nil
+
+		default:
+			fmt.Println("unknown command!")
+		}
+	}
 }

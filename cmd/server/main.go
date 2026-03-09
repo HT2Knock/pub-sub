@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/rabbitmq"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 )
@@ -49,11 +50,45 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	defer client.Close()
 
-	if err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true}); err != nil {
-		return err
+	inputChan := make(chan []string)
+	go func() {
+		for {
+			inputChan <- gamelogic.GetInput()
+		}
+	}()
+
+	gamelogic.PrintServerHelp()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case inputs := <-inputChan:
+			if len(inputs) < 1 {
+				continue
+			}
+
+			switch inputs[0] {
+			case "pause":
+				log.Println("sending a pause message")
+				err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
+				if err != nil {
+					return err
+				}
+
+			case "resume":
+				log.Println("sending a resume message")
+				err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
+				if err != nil {
+					return err
+				}
+
+			case "quit":
+				log.Println("quitting good bye...")
+				return nil
+
+			default:
+				log.Println("unknown command!")
+			}
+		}
 	}
-
-	<-ctx.Done()
-
-	return nil
 }

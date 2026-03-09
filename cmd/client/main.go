@@ -69,9 +69,25 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 
 		switch inputs[0] {
 		case "spawn":
-			if err := gs.CommandSpawn(inputs[1:]); err != nil {
+			if err := gs.CommandSpawn(inputs); err != nil {
 				log.Printf("Spawn failed: %v\n", err)
 			}
+		case "move":
+			mv, err := gs.CommandMove(inputs)
+			if err != nil {
+				log.Printf("Move failed: %v\n", err)
+			}
+
+			fmt.Printf("%v move a unit\n", mv.Player.Username)
+
+		case "status":
+			gs.CommandStatus()
+
+		case "help":
+			gamelogic.PrintClientHelp()
+
+		case "spam":
+			fmt.Println("Spamming is not allowed yet!")
 
 		case "quit":
 			log.Println("quitting good bye...")

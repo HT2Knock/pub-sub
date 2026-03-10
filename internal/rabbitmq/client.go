@@ -103,18 +103,20 @@ func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQue
 		return fmt.Errorf("failed to consume queue %v: %w", queue, err)
 	}
 
-	for message := range messages {
-		var data T
-		if err := json.Unmarshal(message.Body, data); err != nil {
-			return fmt.Errorf("unmarshal error: %w", err)
-		}
+	go func() {
+		for message := range messages {
+			var data T
+			if err := json.Unmarshal(message.Body, &data); err != nil {
+				log.Printf("unmarshal error: %v+", err)
+			}
 
-		if err := message.Ack(false); err != nil {
-			return fmt.Errorf("ack error: %w", err)
-		}
+			if err := message.Ack(false); err != nil {
+				log.Printf("ack error: %v+", err)
+			}
 
-		handler(data)
-	}
+			handler(data)
+		}
+	}()
 
 	return nil
 }

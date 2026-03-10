@@ -55,12 +55,18 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	_, err = client.DeclareAndBind(routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, rabbitmq.Transient)
-	if err != nil {
+	gs := gamelogic.NewGameState(username)
+
+	if err = rabbitmq.Subscribe(
+		*client,
+		routing.ExchangePerilDirect,
+		routing.PauseKey+"."+username,
+		routing.PauseKey,
+		rabbitmq.Transient,
+		HandlePause(gs)); err != nil {
 		return err
 	}
 
-	gs := gamelogic.NewGameState(username)
 	for {
 		select {
 		case <-ctx.Done():
@@ -102,5 +108,12 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		default:
 			fmt.Println("unknown command!")
 		}
+	}
+}
+
+func HandlePause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
 	}
 }

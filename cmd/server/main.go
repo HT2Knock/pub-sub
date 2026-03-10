@@ -50,6 +50,11 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	defer client.Close()
 
+	_, err = client.DeclareAndBind(routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", rabbitmq.Durable)
+	if err != nil {
+		return err
+	}
+
 	gamelogic.PrintServerHelp()
 
 	for {

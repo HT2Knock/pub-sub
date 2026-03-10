@@ -91,3 +91,30 @@ func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType Simpl
 
 	return q, nil
 }
+
+func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T)) error {
+	_, err := c.DeclareAndBind(exchange, queue, key, queueType)
+	if err != nil {
+		return err
+	}
+
+	messages, err := c.channel.Consume(queue, "", false, false, false, false, nil)
+	if err != nil {
+		return fmt.Errorf("failed to consume queue %v: %w", queue, err)
+	}
+
+	for message := range messages {
+		var data T
+		if err := json.Unmarshal(message.Body, data); err != nil {
+			return fmt.Errorf("unmarshal error: %w", err)
+		}
+
+		if err := message.Ack(false); err != nil {
+			return fmt.Errorf("ack error: %w", err)
+		}
+
+		handler(data)
+	}
+
+	return nil
+}

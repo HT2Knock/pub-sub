@@ -27,7 +27,7 @@ func handlerMove(c *rabbitmq.Client, gs *gamelogic.GameState) func(gamelogic.Arm
 			return rabbitmq.Ack
 
 		case gamelogic.MoveOutcomeMakeWar:
-			if err := c.Publish(routing.ExchangePerilTopic, routing.WarRecognitionsPrefix+"."+gs.GetUsername(), gamelogic.RecognitionOfWar{Attacker: move.Player, Defender: gs.GetPlayerSnap()}); err != nil {
+			if err := c.PublishJSON(routing.ExchangePerilTopic, routing.WarRecognitionsPrefix+"."+gs.GetUsername(), gamelogic.RecognitionOfWar{Attacker: move.Player, Defender: gs.GetPlayerSnap()}); err != nil {
 				return rabbitmq.NackRequeue
 			}
 			return rabbitmq.Ack

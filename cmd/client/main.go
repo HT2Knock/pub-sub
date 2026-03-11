@@ -57,7 +57,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 
 	gs := gamelogic.NewGameState(username)
 
-	if err = rabbitmq.Subscribe(
+	if err = rabbitmq.SubscribeJSON(
 		*client,
 		routing.ExchangePerilDirect,
 		routing.PauseKey+"."+username,
@@ -67,7 +67,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	if err = rabbitmq.Subscribe(
+	if err = rabbitmq.SubscribeJSON(
 		*client,
 		routing.ExchangePerilTopic,
 		routing.ArmyMovesPrefix+"."+username,
@@ -77,7 +77,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 
-	if err = rabbitmq.Subscribe(
+	if err = rabbitmq.SubscribeJSON(
 		*client,
 		routing.ExchangePerilTopic,
 		routing.WarRecognitionsPrefix,
@@ -110,7 +110,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 				log.Printf("Move failed: %v\n", err)
 			}
 
-			if err = client.Publish(routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username, mv); err != nil {
+			if err = client.PublishJSON(routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username, mv); err != nil {
 				log.Printf("Published move failed: %v\n", err)
 			}
 		case "status":

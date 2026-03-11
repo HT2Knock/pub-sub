@@ -65,7 +65,7 @@ func (c *Client) init(conn *amqp.Connection) error {
 	return nil
 }
 
-func (c *Client) Publish(exchange, key string, val any) error {
+func (c *Client) PublishJSON(exchange, key string, val any) error {
 	data, err := json.Marshal(val)
 	if err != nil {
 		return fmt.Errorf("failed to marshal json: %w", err)
@@ -100,7 +100,7 @@ func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType Simpl
 	return q, nil
 }
 
-func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
+func SubscribeJSON[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
 	_, err := c.DeclareAndBind(exchange, queue, key, queueType)
 	if err != nil {
 		return err

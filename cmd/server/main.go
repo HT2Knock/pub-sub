@@ -72,14 +72,14 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		switch inputs[0] {
 		case "pause":
 			fmt.Println("sending a pause message")
-			err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
+			err := client.PublishJSON(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
 			if err != nil {
 				log.Printf("published failed: %v\n", err)
 			}
 
 		case "resume":
 			fmt.Println("sending a resume message")
-			err := client.Publish(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
+			err := client.PublishJSON(routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
 			if err != nil {
 				log.Printf("published failed: %v\n", err)
 			}

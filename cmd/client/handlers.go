@@ -40,25 +40,38 @@ func handlerMove(c *rabbitmq.Client, gs *gamelogic.GameState) func(gamelogic.Arm
 	}
 }
 
-func handlerWar(gs *gamelogic.GameState) func(rw gamelogic.RecognitionOfWar) rabbitmq.AckType {
+func handlerWar(client *rabbitmq.Client, gs *gamelogic.GameState) func(rw gamelogic.RecognitionOfWar) rabbitmq.AckType {
 	return func(rw gamelogic.RecognitionOfWar) rabbitmq.AckType {
 		defer fmt.Print("> ")
-		warOutcome, _, _ := gs.HandleWar(rw)
+		warOutcome, w, l := gs.HandleWar(rw)
+		logs := func(msg string) rabbitmq.AckType {
+			if err := client.PublishGob(routing.ExchangePerilTopic, routing.GameLogSlug+"."+rw.Attacker.Username, msg); err != nil {
+				return rabbitmq.NackRequeue
+			}
+
+			return rabbitmq.Ack
+		}
 
 		switch warOutcome {
 		case gamelogic.WarOutcomeNotInvolved:
 			return rabbitmq.NackRequeue
+
 		case gamelogic.WarOutcomeNoUnits:
 			return rabbitmq.NackDiscard
+
+		case gamelogic.WarOutcomeDraw:
+			return logs(fmt.Sprintf("A war between %s and %s resulted in a draw", w, l))
+
 		case gamelogic.WarOutcomeYouWon:
 			fallthrough
-		case gamelogic.WarOutcomeDraw:
-			fallthrough
+
 		case gamelogic.WarOutcomeOpponentWon:
-			return rabbitmq.Ack
+			return logs(w + " won a war against " + l)
+
 		default:
 			log.Println("Unknown war outcome")
-			return rabbitmq.NackDiscard
 		}
+
+		return rabbitmq.Ack
 	}
 }

@@ -83,7 +83,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		routing.WarRecognitionsPrefix,
 		routing.WarRecognitionsPrefix+".*",
 		rabbitmq.Durable,
-		handlerWar(gs)); err != nil {
+		handlerWar(client, gs)); err != nil {
 		return err
 	}
 

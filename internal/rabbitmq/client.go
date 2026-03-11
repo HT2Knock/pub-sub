@@ -1,7 +1,9 @@
 package rabbitmq
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -78,6 +80,30 @@ func (c *Client) PublishJSON(exchange, key string, val any) error {
 		Timestamp:   time.Now(),
 		ContentType: "application/json",
 		Body:        data,
+	}
+
+	if err := c.channel.PublishWithContext(ctx, exchange, key, false, false, msg); err != nil {
+		return fmt.Errorf("failed to publish: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) PublishGob(exchange, key string, val any) error {
+	var buf bytes.Buffer
+
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(val); err != nil {
+		return fmt.Errorf("failed to encode gob: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	msg := amqp.Publishing{
+		Timestamp:   time.Now(),
+		ContentType: "application/gob",
+		Body:        buf.Bytes(),
 	}
 
 	if err := c.channel.PublishWithContext(ctx, exchange, key, false, false, msg); err != nil {

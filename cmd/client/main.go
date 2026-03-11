@@ -63,7 +63,17 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		routing.PauseKey+"."+username,
 		routing.PauseKey,
 		rabbitmq.Transient,
-		HandlePause(gs)); err != nil {
+		handlerPause(gs)); err != nil {
+		return err
+	}
+
+	if err = rabbitmq.Subscribe(
+		*client,
+		routing.ExchangePerilTopic,
+		routing.ArmyMovesPrefix+"."+username,
+		routing.ArmyMovesPrefix+".*",
+		rabbitmq.Transient,
+		handlerMove(gs)); err != nil {
 		return err
 	}
 
@@ -90,8 +100,9 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 				log.Printf("Move failed: %v\n", err)
 			}
 
-			fmt.Printf("%v move a unit\n", mv.Player.Username)
-
+			if err = client.Publish(routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username, mv); err != nil {
+				log.Printf("Published move failed: %v\n", err)
+			}
 		case "status":
 			gs.CommandStatus()
 
@@ -108,12 +119,5 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		default:
 			fmt.Println("unknown command!")
 		}
-	}
-}
-
-func HandlePause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	return func(ps routing.PlayingState) {
-		defer fmt.Print("> ")
-		gs.HandlePause(ps)
 	}
 }

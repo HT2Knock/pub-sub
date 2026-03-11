@@ -17,6 +17,14 @@ const (
 	Durable
 )
 
+type AckType int
+
+const (
+	Ack = iota
+	NackRequeue
+	NackDiscard
+)
+
 type Client struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
@@ -92,7 +100,7 @@ func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType Simpl
 	return q, nil
 }
 
-func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T)) error {
+func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
 	_, err := c.DeclareAndBind(exchange, queue, key, queueType)
 	if err != nil {
 		return err
@@ -107,14 +115,33 @@ func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQue
 		for message := range messages {
 			var data T
 			if err := json.Unmarshal(message.Body, &data); err != nil {
-				log.Printf("unmarshal error: %v+", err)
+				log.Printf("unmarshal error: %v+\n", err)
+				if err := message.Nack(false, false); err != nil {
+					log.Printf("nack error: %+v", err)
+				}
+				continue
 			}
 
-			if err := message.Ack(false); err != nil {
-				log.Printf("ack error: %v+", err)
-			}
+			switch handler(data) {
+			case Ack:
+				if err := message.Ack(false); err != nil {
+					log.Printf("ack error: %+v", err)
+				}
 
-			handler(data)
+				fmt.Println("message ack")
+			case NackRequeue:
+				if err := message.Nack(false, true); err != nil {
+					log.Printf("nack error: %+v", err)
+				}
+
+				fmt.Println("message requeue")
+			case NackDiscard:
+				if err := message.Nack(false, false); err != nil {
+					log.Printf("nack error: %+v", err)
+				}
+
+				fmt.Println("message discarded")
+			}
 		}
 	}()
 

@@ -44,6 +44,7 @@ func handlerWar(client *rabbitmq.Client, gs *gamelogic.GameState) func(rw gamelo
 	return func(rw gamelogic.RecognitionOfWar) rabbitmq.AckType {
 		defer fmt.Print("> ")
 		warOutcome, w, l := gs.HandleWar(rw)
+		// FIX: need to use the game log struct
 		logs := func(msg string) rabbitmq.AckType {
 			if err := client.PublishGob(routing.ExchangePerilTopic, routing.GameLogSlug+"."+rw.Attacker.Username, msg); err != nil {
 				return rabbitmq.NackRequeue

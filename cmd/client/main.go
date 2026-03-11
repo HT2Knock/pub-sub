@@ -73,7 +73,17 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		routing.ArmyMovesPrefix+"."+username,
 		routing.ArmyMovesPrefix+".*",
 		rabbitmq.Transient,
-		handlerMove(gs)); err != nil {
+		handlerMove(client, gs)); err != nil {
+		return err
+	}
+
+	if err = rabbitmq.Subscribe(
+		*client,
+		routing.ExchangePerilTopic,
+		routing.WarRecognitionsPrefix,
+		routing.WarRecognitionsPrefix+".*",
+		rabbitmq.Durable,
+		handlerWar(gs)); err != nil {
 		return err
 	}
 

@@ -88,7 +88,7 @@ func (c *Client) Publish(exchange, key string, val any) error {
 }
 
 func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType SimpleQueueType) (amqp.Queue, error) {
-	q, err := c.channel.QueueDeclare(queueName, queueType == Durable, queueType == Transient, queueType == Transient, false, nil)
+	q, err := c.channel.QueueDeclare(queueName, queueType == Durable, queueType == Transient, queueType == Transient, false, amqp.Table{"x-dead-letter-exchange": "peril_dlx"})
 	if err != nil {
 		return amqp.Queue{}, fmt.Errorf("failed to declare queue: %w", err)
 	}
@@ -128,19 +128,15 @@ func Subscribe[T any](c Client, exchange, queue, key string, queueType SimpleQue
 					log.Printf("ack error: %+v", err)
 				}
 
-				fmt.Println("message ack")
 			case NackRequeue:
 				if err := message.Nack(false, true); err != nil {
 					log.Printf("nack error: %+v", err)
 				}
 
-				fmt.Println("message requeue")
 			case NackDiscard:
 				if err := message.Nack(false, false); err != nil {
 					log.Printf("nack error: %+v", err)
 				}
-
-				fmt.Println("message discarded")
 			}
 		}
 	}()

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/rabbitmq"
@@ -130,4 +131,15 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 			fmt.Println("unknown command!")
 		}
 	}
+}
+
+func publishGameLog(client *rabbitmq.Client, username, msg string) error {
+	return client.PublishGob(
+		routing.ExchangePerilTopic,
+		routing.GameLogSlug+"."+username,
+		routing.GameLog{
+			CurrentTime: time.Now(),
+			Message:     msg,
+			Username:    username,
+		})
 }

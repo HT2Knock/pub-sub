@@ -50,8 +50,15 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	defer client.Close()
 
-	_, err = client.DeclareAndBind(routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", rabbitmq.Durable)
-	if err != nil {
+	if err := rabbitmq.SubscribeGob(client, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", rabbitmq.Durable, func(gamelog routing.GameLog) rabbitmq.AckType {
+		defer fmt.Print("> ")
+		err := gamelogic.WriteLog(gamelog)
+		if err != nil {
+			log.Println("failed writing disk to logs")
+		}
+
+		return rabbitmq.Ack
+	}); err != nil {
 		return err
 	}
 

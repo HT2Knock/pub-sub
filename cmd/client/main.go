@@ -59,7 +59,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	gs := gamelogic.NewGameState(username)
 
 	if err = rabbitmq.SubscribeJSON(
-		*client,
+		client,
 		routing.ExchangePerilDirect,
 		routing.PauseKey+"."+username,
 		routing.PauseKey,
@@ -69,7 +69,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 
 	if err = rabbitmq.SubscribeJSON(
-		*client,
+		client,
 		routing.ExchangePerilTopic,
 		routing.ArmyMovesPrefix+"."+username,
 		routing.ArmyMovesPrefix+".*",
@@ -79,7 +79,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 
 	if err = rabbitmq.SubscribeJSON(
-		*client,
+		client,
 		routing.ExchangePerilTopic,
 		routing.WarRecognitionsPrefix,
 		routing.WarRecognitionsPrefix+".*",

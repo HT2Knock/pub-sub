@@ -126,7 +126,32 @@ func (c *Client) DeclareAndBind(exchange, queueName, key string, queueType Simpl
 	return q, nil
 }
 
-func SubscribeJSON[T any](c Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
+func SubscribeJSON[T any](c *Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
+	return subscribe(c, exchange, queue, key, queueType, handler, func(data []byte) (T, error) {
+		var target T
+		err := json.Unmarshal(data, &target)
+		if err != nil {
+			return target, err
+		}
+
+		return target, nil
+	})
+}
+
+func SubscribeGob[T any](c *Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType) error {
+	return subscribe(c, exchange, queue, key, queueType, handler, func(b []byte) (T, error) {
+		var target T
+
+		decoder := gob.NewDecoder(bytes.NewBuffer(b))
+		if err := decoder.Decode(&target); err != nil {
+			return target, err
+		}
+
+		return target, nil
+	})
+}
+
+func subscribe[T any](c *Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType, unmarshaller func([]byte) (T, error)) error {
 	_, err := c.DeclareAndBind(exchange, queue, key, queueType)
 	if err != nil {
 		return err
@@ -139,8 +164,8 @@ func SubscribeJSON[T any](c Client, exchange, queue, key string, queueType Simpl
 
 	go func() {
 		for message := range messages {
-			var data T
-			if err := json.Unmarshal(message.Body, &data); err != nil {
+			data, err := unmarshaller(message.Body)
+			if err != nil {
 				log.Printf("unmarshal error: %v+\n", err)
 				if err := message.Nack(false, false); err != nil {
 					log.Printf("nack error: %+v", err)

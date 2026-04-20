@@ -1,8 +1,8 @@
 package gamelogic
 
 type Player struct {
-	Username string
 	Units    map[int]Unit
+	Username string
 }
 
 type UnitRank string
@@ -14,15 +14,15 @@ const (
 )
 
 type Unit struct {
-	ID       int
 	Rank     UnitRank
 	Location Location
+	ID       int
 }
 
 type ArmyMove struct {
 	Player     Player
-	Units      []Unit
 	ToLocation Location
+	Units      []Unit
 }
 
 type RecognitionOfWar struct {

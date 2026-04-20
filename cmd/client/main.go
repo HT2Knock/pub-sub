@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -121,7 +122,9 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 			gamelogic.PrintClientHelp()
 
 		case "spam":
-			fmt.Println("Spamming is not allowed yet!")
+			if err := spamming(inputs[1], client, gs); err != nil {
+				return err
+			}
 
 		case "quit":
 			log.Println("quitting good bye...")
@@ -142,4 +145,20 @@ func publishGameLog(client *rabbitmq.Client, username, msg string) error {
 			Message:     msg,
 			Username:    username,
 		})
+}
+
+func spamming(times string, client *rabbitmq.Client, gs *gamelogic.GameState) error {
+	spams, err := strconv.Atoi(times)
+	if err != nil {
+		return fmt.Errorf("failed to spam: %w", err)
+	}
+
+	fmt.Println(spams)
+	for range spams {
+		if err := publishGameLog(client, gs.Player.Username, gamelogic.GetMaliciousLog()); err != nil {
+			return fmt.Errorf("failed to publish game log: %w", err)
+		}
+	}
+
+	return nil
 }

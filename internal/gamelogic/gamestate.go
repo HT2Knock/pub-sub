@@ -6,8 +6,8 @@ import (
 
 type GameState struct {
 	Player Player
-	Paused bool
 	mu     *sync.RWMutex
+	Paused bool
 }
 
 func NewGameState(username string) *GameState {

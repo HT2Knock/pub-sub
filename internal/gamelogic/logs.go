@@ -11,6 +11,7 @@ import (
 
 const logsFile = "game.log"
 
+// TODO: could try logs rotation and orchestrate log
 func WriteLog(gamelog routing.GameLog) error {
 	log.Printf("received game log...")
 

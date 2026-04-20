@@ -11,6 +11,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// TODO: could try flat buffer serialize and protobuf
 func (c *Client) PublishJSON(exchange, key string, val any) error {
 	data, err := json.Marshal(val)
 	if err != nil {

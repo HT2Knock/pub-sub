@@ -19,6 +19,7 @@ type config struct {
 	addr string
 }
 
+// TODO: need different way to separate cli and input may be use a framework
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

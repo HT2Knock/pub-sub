@@ -34,9 +34,12 @@ func SubscribeGob[T any](c *Client, exchange, queue, key string, queueType Simpl
 }
 
 func subscribe[T any](c *Client, exchange, queue, key string, queueType SimpleQueueType, handler func(T) AckType, unmarshaller func([]byte) (T, error)) error {
-	_, err := c.DeclareAndBind(exchange, queue, key, queueType)
-	if err != nil {
-		return err
+	if _, err := c.DeclareAndBind(exchange, queue, key, queueType); err != nil {
+		return fmt.Errorf("failed to declare and bind to queue: %w", err)
+	}
+
+	if err := c.channel.Qos(10, 0, false); err != nil {
+		return fmt.Errorf("failed to set prefetch count: %w", err)
 	}
 
 	messages, err := c.channel.Consume(queue, "", false, false, false, false, nil)
